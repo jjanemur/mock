@@ -1,12 +1,9 @@
 from copy import copy
 
-from flask_restful import Api, Resource
+from flask_restful import Resource
 from flask import request, jsonify
 
-from app import app
 from src.tweets import OBJECT
-
-api = Api(app)
 
 
 class SearchTweetsApi(Resource):
@@ -17,15 +14,21 @@ class SearchTweetsApi(Resource):
     def data(self):
         return self._dummy["data"]
 
-    def get_tweets(self):
-        fields = request.args.get('tweet_fields', None)
-        tweets_data = self.filter_fields(self.data, fields)
-        tweets_data = (self.filter_data(tweets_data))
+    # @data.setter
+    # def data(self, changes):
+    #     self._dummy = changes
+
+    def get(self):
+        tweets_data = self.data
+        if fields := request.args.get('tweet.fields', None):
+            tweets_data = self.filter_fields(self.data, fields)
+        if query := request.args.get('query', None):
+            tweets_data = self.filter_data(tweets_data, query)
 
         return jsonify({"data": tweets_data})
 
     @staticmethod
-    def filter_fields(_object, _fields) -> list:
+    def filter_fields(_object: list, _fields: str) -> list:
         data = copy(_object)
         new_data = []
         for tweet in data:
@@ -35,15 +38,10 @@ class SearchTweetsApi(Resource):
         return new_data
 
     @staticmethod
-    def filter_data(_object: list, **kwargs) -> list:
-        filtered_object = _object
-        for k, v in kwargs.items():
-            if not v:
-                continue
-            filtered_object = [i for i in filtered_object if i[k] == v]
-        return filtered_object
-
-
-api.add_resource(SearchTweetsApi, "2/tweets/search/recent", endpoint='tweets')
-
-
+    def filter_data(_object: list, _query: str) -> list:
+        data = copy(_object)
+        _query = _query.split(' ')
+        if keywords := [k for k in _query if ':' not in _query]:
+            for keyword in keywords:
+                data = [i for i in data if keyword in i['text']]
+        return data
