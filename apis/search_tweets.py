@@ -22,10 +22,10 @@ class SearchTweetsApi(Resource):
     @auth_checker
     def get(self):
         tweets_data = self.data
-        if fields := request.args.get('tweet.fields', None):
-            tweets_data = self.filter_fields(self.data, fields)
         if query := request.args.get('query', None):
             tweets_data = self.filter_data(tweets_data, query)
+        if fields := request.args.get('tweet.fields', None):
+            tweets_data = self.filter_fields(self.data, fields)
 
         return jsonify({"data": tweets_data})
 
