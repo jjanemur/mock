@@ -29,11 +29,11 @@ class SearchTweetsApi(Resource):
 
     @staticmethod
     def filter_fields(_object: list, _fields: str) -> list:
-        data = copy(_object)
         new_data = []
-        for tweet in data:
-            new_item = {k: v for k, v in tweet.items() if k in _fields}
-            new_data.append(new_item)
+        _fields = _fields.split(',')
+        for tweet in _object:
+            new_tweet = {k: v for k, v in tweet.items() if k in _fields}
+            new_data.append(new_tweet)
 
         return new_data
 
