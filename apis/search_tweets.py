@@ -4,6 +4,7 @@ from flask_restful import Resource
 from flask import request, jsonify
 
 from src.tweets import OBJECT
+from utils.auth import auth_checker
 
 
 class SearchTweetsApi(Resource):
@@ -18,6 +19,7 @@ class SearchTweetsApi(Resource):
     # def data(self, changes):
     #     self._dummy = changes
 
+    @auth_checker
     def get(self):
         tweets_data = self.data
         if fields := request.args.get('tweet.fields', None):
