@@ -1,26 +1,17 @@
-from flask import Flask, request, jsonify
-from flask_restful import Api, Resource
+from base64 import b64encode
 
-
-from data_generator import OBJECT
-from filters import filter_data
+from flask import Flask
 
 app = Flask(__name__)
-api = Api(app)
 
 
-@app.route('/')
-def index():
+class BasicAuthenticator:
+    def login(self, username: str, password: str):
+        if username != "dummy" or password != "password":
+            return 'Unauthorized', 401
 
-    return 'Template'
-
-
-@app.route('/users', methods=['GET'])
-def get_users():
-    username = request.args.get('username', None)
-    user_id = request.args.get('id', None)
-
-    return jsonify(filter_data(OBJECT, username=username, user_id=user_id))
+        token = b64encode(f'{username}:{password}'.encode('utf-8')).decode('ascii')
+        return {'token': token}
 
 
 if __name__ == '__main__':
