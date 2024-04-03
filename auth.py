@@ -11,7 +11,7 @@ def auth_checker(func):
                             help='Authorization can not be empty!')
         token = parser.parse_args()['Authorization']
 
-        if token == 'Bearer 123':
+        if 'Bearer' in token:
             result = func(*args, **kwargs)
             return result
         else:

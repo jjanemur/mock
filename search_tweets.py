@@ -1,37 +1,57 @@
+import json
+import random
 from copy import copy
+from datetime import datetime
+from pathlib import Path
 
+import pytz
 from flask_restful import Resource
 from flask import request, jsonify
 
-from src.tweets_template import OBJECT
-from utils.auth import auth_checker
+from auth import auth_checker
+from symbol_ids import SYMBOL_IDS
+
+FILE_PATH = Path(__file__).parent.joinpath('tweets_template.json').absolute()
+LAST_ID = 0
 
 
 class SearchTweetsApi(Resource):
 
-    _dummy = OBJECT
+    _dummy = {}
 
     @property
-    def tweets(self):
-        return self._dummy["data"]
+    def symbols(self):
+        return SYMBOL_IDS
 
     @property
-    def users(self):
-        return self._dummy["includes"]["users"]
+    def dummy(self):
+        if not self._dummy:
+            with open(FILE_PATH) as f:
+                self._dummy = json.load(f)
+        return self._dummy
 
-    @property
-    def media(self):
-        return self._dummy["includes"]["media"]
+    def change_tweets(self) -> list:
+        global LAST_ID
 
-    # @data.setter
-    # def data(self, changes):
-    #     self._dummy = changes
+        date = datetime.now(tz=pytz.timezone('UTC'))
+        data = self.dummy['data']
+
+        for tweet in data:
+            LAST_ID += 1
+            tweet['created_at'] = date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            tweet['id'] = LAST_ID
+            if entities := tweet.get('entities'):
+                for cashtag in entities.get('cashtags', []):
+                    new_cashtag = random.choice(self.symbols)
+                    tweet['text'] = tweet['text'].replace(cashtag['tag'], new_cashtag)
+                    cashtag['tag'] = new_cashtag
+        return data
 
     @auth_checker
     def get(self):
-        tweets_data = self.tweets
-        users = self.users
-        media = self.media
+        tweets_data = self.change_tweets()
+        users = self.dummy["includes"]["users"]
+        media = self.dummy["includes"]["media"]
         if query := request.args.get('query', None):
             tweets_data = self.filter_data(tweets_data, query)
         if fields := request.args.get('tweet.fields', None):
