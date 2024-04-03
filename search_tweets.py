@@ -13,6 +13,8 @@ from symbol_ids import SYMBOL_IDS
 
 FILE_PATH = Path(__file__).parent.joinpath('tweets_template.json').absolute()
 LAST_ID = 0
+SEND_LAST_SNAPSHOT = False
+LAST_SNAPSHOT = {}
 
 
 class SearchTweetsApi(Resource):
@@ -31,20 +33,26 @@ class SearchTweetsApi(Resource):
         return self._dummy
 
     def change_tweets(self) -> list:
-        global LAST_ID
+        global LAST_ID, LAST_SNAPSHOT
 
-        date = datetime.now(tz=pytz.timezone('UTC'))
         data = self.dummy['data']
 
-        for tweet in data:
-            LAST_ID += 1
-            tweet['created_at'] = date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-            tweet['id'] = LAST_ID
-            if entities := tweet.get('entities'):
-                for cashtag in entities.get('cashtags', []):
-                    new_cashtag = random.choice(self.symbols)
-                    tweet['text'] = tweet['text'].replace(cashtag['tag'], new_cashtag)
-                    cashtag['tag'] = new_cashtag
+        if not SEND_LAST_SNAPSHOT or not LAST_SNAPSHOT:
+
+            date = datetime.now(tz=pytz.timezone('UTC'))
+
+            for tweet in data:
+                LAST_ID += 1
+                tweet['created_at'] = date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                tweet['id'] = LAST_ID
+                if entities := tweet.get('entities'):
+                    for cashtag in entities.get('cashtags', []):
+                        new_cashtag = random.choice(self.symbols)
+                        tweet['text'] = tweet['text'].replace(cashtag['tag'], new_cashtag)
+                        cashtag['tag'] = new_cashtag
+
+            LAST_SNAPSHOT = data
+
         return data
 
     @auth_checker
@@ -80,3 +88,11 @@ class SearchTweetsApi(Resource):
             for keyword in keywords:
                 data = [i for i in data if keyword in i['text']]
         return data
+
+
+class LastSnapshot(Resource):
+
+    @staticmethod
+    def post():
+        global SEND_LAST_SNAPSHOT
+        SEND_LAST_SNAPSHOT = request.json.get('value')
