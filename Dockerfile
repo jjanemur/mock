@@ -7,11 +7,19 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY Pipfile Pipfile.lock /app/
 
+RUN useradd -m -d /home/python -s /bin/bash python
+
+RUN chown -R python:python /app
+
+ENV HOME=/home/python
+
+ENV PATH="/home/python/.local/bin:${PATH}"
+
+USER python
+
 RUN pip install pipenv
 RUN pipenv install --deploy --ignore-pipfile
 
 COPY . /app
-
-EXPOSE ${PORT}
 
 CMD ["pipenv", "run", "flask", "run", "--host=0.0.0.0"]
